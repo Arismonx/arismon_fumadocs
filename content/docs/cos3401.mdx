@@ -704,3 +704,143 @@ if __name__ == '__main__':
     ![5](/image/final_img_concat.png)
   </Accordion>
 </Accordions>
+
+## งานชุดที่ 2
+#### ข้อที่ 1
+ให้นักศึกษาหาขอบภาพที่สมบูรณ์ที่สุด ชัดเจนที่สุด ของสัญลักษณ์พิเศษบนศิลาหินในน้ํา (ออกแบบ
+วิธีการเองอย่างเหมาะสม ให้ได้คําถามที่ดีที่สุดที่เป็นไปได้)
+![1](/image/symbolics.jpg)
+<Accordions type="single">
+  <Accordion title="คำตอบ ข้อที่ 1"> 
+
+    ```py
+import cv2
+import numpy as np
+
+def cv_show(img,title=''):
+        cv2.imshow(title, img)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+def normalize(img):
+        img_norm = img.astype(np.float16)
+        img_norm = img_norm/np.amax(img_norm)
+        return img_norm
+
+def power_gamma(gamma,img_norm,c=255.0):
+        gamma_img = (img_norm**gamma)*c
+        gamma_img = gamma_img.astype(np.uint8)
+        return gamma_img
+
+def edge_operator_meth(img, k):
+        f = img.copy().astype(np.float16)
+        out = np.zeros_like(img, dtype = 'float16')
+        mask_gx = np.array([[-1, 0, 1], [-k, 0, k], [-1, 0, 1]] , dtype = 'float16') 
+        mask_gy = np.array([[-1, -k, -1], [0, 0, 0], [1, k, 1]] , dtype = 'float16') 
+        
+        sz, sz = mask_gx.shape
+        bd = sz // 2
+        (m,n) = f.shape
+        for i in range(bd,m-bd):
+                for j in range(bd,n-bd):
+                        gx, gy = 0., 0.
+                        sub_f = f[i - bd : i + bd + 1, j - bd : j + bd + 1]
+                        gx = np.multiply(sub_f, mask_gx).sum() 
+                        gy = np.multiply(sub_f, mask_gy).sum()    
+                        out[i,j] = np.sqrt(gx**2 + gy**2)
+        out[out>255.0] = 255.0
+        return out.astype(np.uint8)
+  
+def main():
+        img_bgr = cv2.imread("./image/symbolics.jpg",1)
+        
+        #แยก B,G,R
+        b,g,r = cv2.split(img_bgr)
+        
+        #ทำ norm แล้วทำ power gamma แต่ละสี
+        #blue
+        norm_b = normalize(b)
+        new_b = power_gamma(0.5,norm_b)
+        
+        #green
+        norm_g = normalize(g)
+        new_g = power_gamma(0.5,norm_g)
+        
+        #red
+        norm_r = normalize(r)
+        new_r = power_gamma(0.5,norm_r)
+        
+        #merge
+        img_merge = cv2.merge((new_b,new_g,new_r))
+        
+        #BGR2HSV
+        img_hsv = cv2.cvtColor(img_merge, cv2.COLOR_BGR2HSV)
+        # cv_show(img_hsv)
+        
+        #หาช่วงสีแดง
+        lower_red= np.array([0, 10, 0])
+        upper_red= np.array([30, 255, 255])
+        mask = cv2.inRange(img_hsv, lower_red, upper_red)
+        
+        #หาขอบ
+        img_final = edge_operator_meth(mask,1)
+        cv_show(img_final)
+        cv2.imwrite('./out/img_edge.png',img_final)
+
+if __name__ == '__main__':
+        main()
+
+    ```
+    หาขอบรูปภาพ
+
+    ![1](/image/img_edge.png)
+  </Accordion>
+</Accordions>
+
+#### ข้อที่ 2
+ให้นักศึกษาออกแบบโปรแกรมในการบูรณะภาพ โดยออกแบบอัลกอริธึมเอง (ตามความเหมาะสม) ใน
+การปรับปรุงคุณภาพภาพระดับเทา เพื่อให้องค์ประกอบส่วนกล้ามเนื้อมีความชัดเจนมากยิ่งขึ้น โดยใช้
+ภาพสีมาเป็นข้อมูลเบื้องต้นในการปรับปรุงภาพระดับเทา
+
+![2](/image/body_color.jpg)
+![2](/image/body_gray.jpg)
+
+<Accordions type="single">
+  <Accordion title="คำตอบ ข้อที่ 2"> 
+
+    ```py
+import cv2
+import numpy as np
+
+def cv_show(img,title=''):
+        cv2.imshow(title, img)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+def main():
+        img_bgr = cv2.imread("./image/body_color.jpg",1)
+        cv_show(img_bgr)
+        
+        img_hsv = cv2.cvtColor(img_bgr,cv2.COLOR_BGR2HSV)
+        cv_show(img_hsv)
+        
+        #หาช่วงสีส้ม
+        lower_orange= np.array([0, 100, 100])
+        upper_orange= np.array([20, 255, 255])
+        mask = cv2.inRange(img_hsv, lower_orange, upper_orange)
+        
+        img_gray = cv2.imread("./image/body_gray.jpg",0)
+        img_gray[mask==255] = img_gray[mask == 255]*2.5
+        
+        cv_show(img_gray)
+        cv2.imwrite('./out/final_img.png',img_gray)
+    
+if __name__ == '__main__':
+        main()
+
+    ```
+    หากล้ามเนื้อ
+
+    ![1](/image/final_img.png)
+  </Accordion>
+</Accordions>
